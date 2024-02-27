@@ -1,0 +1,85 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+# This templates creates a private S3 Bucket for the resume site, a CloudFront Distribution with that bucket as origin, and an Origin Access Control (OAC) to allow access.
+
+Parameters:
+  ResumeBucketName:
+    Type: String
+    Description: Name of the S3 bucket to store the resume site
+    Default: scrc-resume-bucket-955124475810
+
+  CFDistroManagedCachePolicyId:
+    Type: String
+    Description: Default Managed Cache Policy to CachingOptimized
+    Default: 658327ea-f89d-4fab-a63d-7e88639e58f6
+
+  Origin1S3Resume:
+    Type: String
+    Description: Within CFDistro, a unique OriginId and CacheBehavior TargetOriginId
+    Default: S3ResumeBucket
+
+  Origin1RootObject:
+    Type: String
+    Default: index.html
+
+Resources:
+  myResumeBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref ResumeBucketName
+      PublicAccessBlockConfiguration:
+        BlockPublicPolicy: TRUE
+
+  myResumeBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref myResumeBucket
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: "cloudfront.amazonaws.com"
+            Action: "s3:GetObject"
+            Resource: !Sub "arn:aws:s3:::${ResumeBucketName}/*"
+            Condition:
+              StringEquals:
+                "AWS:SourceArn": !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${myCFDistro}"
+
+  myCFDistro:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        DefaultCacheBehavior:
+          AllowedMethods:
+            - "GET"
+            - "HEAD"
+          CachePolicyId: !Ref CFDistroManagedCachePolicyId
+          Compress: true
+          SmoothStreaming: false
+          TargetOriginId: !Ref Origin1S3Resume
+          ViewerProtocolPolicy: allow-all
+        DefaultRootObject: !Ref Origin1RootObject
+        Enabled: true
+        HttpVersion: http1.1
+        PriceClass: PriceClass_All
+        Origins:
+          - DomainName: !GetAtt myResumeBucket.DomainName
+            Id: !Ref Origin1S3Resume
+            S3OriginConfig:
+              OriginAccessIdentity: ""
+            OriginAccessControlId: !Ref myOAC
+
+  myOAC:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Description: Restrict public access to origin's contents via CFDistro only
+        Name: MyCFDistroOAC
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
+Outputs:
+  myCFDistroDomainName:
+    Value: !GetAtt myCFDistro.DomainName

@@ -1,0 +1,41 @@
+name: cicd-client
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  upload-site:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          audience: sts.amazonaws.com
+          aws-region: us-east-1
+          role-to-assume: arn:aws:iam::955124475810:role/github-oidc-role-Role-qqiSGM6xVeeT
+      - name: Upload resume-site folder to AWS S3 Bucket
+        run: |
+          aws s3 cp resume-site/ s3://scrc-resume-bucket-955124475810/ --recursive
+      - name: Invalidate cache with AWS CloudFront Distribution
+        run: |
+          aws cloudfront create-invalidation --distribution-id E3S46G340EUV1O --paths "/*"
+
+  cypress-run:
+    needs: upload-site
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Cypress run
+        uses: cypress-io/github-action@v6
+        with:
+          working-directory: ./test
+          spec: cypress/e2e/*.cy.js
