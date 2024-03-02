@@ -130,7 +130,7 @@
       <div class="timeline-card timeline-card-success card shadow-sm">
         <div class="card-body">
           <div class="h5 mb-1">Information Security Officer <span class="text-muted h6">at Taiwan Business Bank, New York Branch</span></div>
-          <div class="text-muted text-small mb-2">Feb, 2023 - Nov, 2023</div>
+          <div class="text-muted text-small mb-2">Feb - Nov, 2023</div>
           </div>
         </div>
       </div>
@@ -185,7 +185,6 @@
         return updatedCount       
       }
 
-      // async invoke the api URL and update the visit count
       postIncrementVisitorCount().then(updatedCount => {
         let visitorSection = document.getElementById("visits")
         console.log(updatedCount);             
