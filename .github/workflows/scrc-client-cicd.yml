@@ -1,13 +1,13 @@
 name: cicd-client
 
-# on:
-#   push:
-#     branches:
-#       - main
-
 on:
-  pull_request:
-    types: [labeled]
+  push:
+    branches:
+      - main
+
+# on:
+#   pull_request:
+#     types: [labeled]
 
 permissions:
   id-token: write
@@ -15,7 +15,7 @@ permissions:
 
 jobs:
   upload-site:
-    if: contains(github.event.pull_request.labels.*.name, 'stage')
+    # if: contains(github.event.pull_request.labels.*.name, 'prod')
 
     runs-on: ubuntu-latest
     steps:
